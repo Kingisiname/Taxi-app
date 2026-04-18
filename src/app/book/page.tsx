@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Car, MapPin, Clock, Users, ArrowRight, ChevronLeft, CheckCircle, Info } from "lucide-react";
 import { locations, estimateFare } from "@/data/locations";
 import { availableDrivers } from "@/data/drivers";
@@ -10,6 +12,8 @@ import DriverCard from "@/components/DriverCard";
 type Step = "details" | "confirm" | "booked";
 
 export default function BookPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [step, setStep] = useState<Step>("details");
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
@@ -174,7 +178,24 @@ export default function BookPage() {
           </div>
 
           <button
-            onClick={() => setStep("booked")}
+            onClick={async () => {
+              if (!session) { router.push("/login?callbackUrl=/book"); return; }
+              await fetch("/api/bookings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  type: "taxi",
+                  pickupId: pickup,
+                  dropoffId: dropoff,
+                  pickupTime: `${date}T${time}`,
+                  passengers,
+                  fareEstimate: fareEstimate?.total ?? 0,
+                  notes,
+                  driverName: driver?.name ?? "",
+                }),
+              });
+              setStep("booked");
+            }}
             className="w-full bg-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
           >
             Confirm Booking <CheckCircle className="w-5 h-5" />

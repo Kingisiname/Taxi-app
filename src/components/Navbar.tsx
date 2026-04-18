@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Car, MapPin, BookOpen, User, Menu, X } from "lucide-react";
+import { Car, MapPin, BookOpen, User, Menu, X, LogOut, LogIn } from "lucide-react";
 import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 
 const navLinks = [
   { href: "/book", label: "Book a Ride", icon: Car },
@@ -15,6 +16,7 @@ const navLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
@@ -42,12 +44,37 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
-            <Link
-              href="/book"
-              className="ml-3 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
-            >
-              Book Now
-            </Link>
+
+            <div className="ml-3 flex items-center gap-2">
+              {status === "authenticated" ? (
+                <>
+                  <span className="text-sm text-gray-500">
+                    Hi, {session.user?.name?.split(" ")[0]}
+                  </span>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" /> Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="text-sm text-gray-600 font-medium px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -78,6 +105,34 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+
+          <div className="pt-2 border-t border-gray-100 mt-2">
+            {status === "authenticated" ? (
+              <button
+                onClick={() => { signOut({ callbackUrl: "/" }); setMenuOpen(false); }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 w-full"
+              >
+                <LogOut className="w-4 h-4" /> Sign out ({session.user?.name?.split(" ")[0]})
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50"
+                >
+                  <LogIn className="w-4 h-4" /> Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </nav>

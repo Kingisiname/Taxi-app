@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Clock,
   Users,
@@ -30,6 +31,8 @@ export default function TourDetailPage() {
   const [selectedDriver] = useState(availableDrivers[0]?.id ?? "");
 
   const today = new Date().toISOString().split("T")[0];
+  const { data: session } = useSession();
+  const router = useRouter();
   const driver = availableDrivers.find(d => d.id === selectedDriver);
   const totalPrice = tour ? tour.price * guests : 0;
 
@@ -156,7 +159,23 @@ export default function TourDetailPage() {
           )}
 
           <button
-            onClick={() => setStep("booked")}
+            onClick={async () => {
+              if (!session) { router.push(`/login?callbackUrl=/tours/${id}`); return; }
+              await fetch("/api/bookings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  type: "tour",
+                  tourId: tour.id,
+                  tourDate: date,
+                  guests,
+                  totalPrice,
+                  notes: requests,
+                  driverName: driver?.name ?? "",
+                }),
+              });
+              setStep("booked");
+            }}
             className="w-full bg-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
           >
             Confirm &amp; Book <CheckCircle className="w-5 h-5" />
